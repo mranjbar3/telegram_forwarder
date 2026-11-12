@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+{% block title %}{{ t('channels') }}{% endblock %}
+{% block heading %}{{ t('channels') }}{% endblock %}
+{% block content %}
+
+<div class="card section">
+  <h2>➕ {{ t('add_source') }}</h2>
+  <form method="post" action="/sources/create" class="form-grid">
+    <label class="field"><span>{{ t('chat_id') }} *</span>
+      <input name="chat" required placeholder="@farsna یا -100...">
+    </label>
+    <label class="field"><span>{{ t('display_name') }}</span>
+      <input name="title" placeholder="فارسنا">
+    </label>
+    <label class="field"><span>{{ t('country') }}</span>
+      <select name="country">
+        {% for code, fa, en, ar, flag in COUNTRIES %}
+          <option value="{{ code }}">{{ flag }} {{ fa }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <div class="field" style="grid-column:1/-1">
+      <button class="button">{{ t('add') }}</button>
+    </div>
+  </form>
+</div>
+
+<div class="card section">
+  <div class="row" style="margin-bottom:10px">
+    <input id="chSearch" class="filter" placeholder="{{ t('search') }}..." style="max-width:280px" oninput="filterChannels()">
+    <select id="chCountry" class="filter" style="max-width:180px" onchange="filterChannels()">
+      <option value="">{{ t('all') }}</option>
+      {% for code, fa, en, ar, flag in COUNTRIES %}
+        <option value="{{ code }}">{{ flag }} {{ fa }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="table-wrap">
+    <table class="table">
+      <thead><tr>
+        <th>{{ t('display_name') }}</th>
+        <th>{{ t('country') }}</th>
+        <th>{{ t('chat_id') }}</th>
+        <th>{{ t('destinations') }}</th>
+        <th>{{ t('status') }}</th>
+        <th></th>
+      </tr></thead>
+      <tbody>
+        {% for s in sources %}
+        <tr data-country="{{ s.country }}" data-search="{{ s.title|lower }} {{ s.chat_id|lower }}">
+          <td><strong>{{ s.title }}</strong></td>
+          <td>{{ lang_flag(s.country) }} {{ lang_name(s.country, request.state.lang) }}</td>
+          <td><small class="muted">{{ s.chat_id }}</small></td>
+          <td>
+            {% for d in s.destinations %}
+              <span class="pill info" style="margin:2px;display:inline-flex;gap:6px;align-items:center">
+                {{ d.title[:16] }}
+                <form method="post" action="/sources/{{ s.id }}/destinations/{{ d.id }}/delete"
+                      style="display:inline" onsubmit="return confirm('{{ t('delete') }}؟')">
+                  <button class="button danger sm" style="padding:1px 6px;font-size:11px">✕</button>
+                </form>
+              </span>
+            {% else %}<span class="muted">—</span>{% endfor %}
+            <button type="button" class="button sm" style="padding:2px 8px"
+                    onclick="toggleDestForm({{ s.id }})">+</button>
+            <form id="destForm{{ s.id }}" method="post"
+                  action="/sources/{{ s.id }}/destinations/create"
+                  style="display:none;margin-top:6px;gap:6px;align-items:center"
+                  onsubmit="return true">
+              <input name="chat" required placeholder="@dest یا -100..." style="min-width:150px">
+              <input name="title" placeholder="{{ t('display_name') }}" style="min-width:120px">
+              <button class="button sm">{{ t('add') }}</button>
+            </form>
+          </td>
+          <td>
+            <form method="post" action="/sources/{{ s.id }}/toggle">
+              <button class="pill {{ '' if s.is_active else 'off' }}" type="submit">
+                {{ t('active') if s.is_active else t('inactive') }}
+              </button>
+            </form>
+          </td>
+          <td>
+            <form method="post" action="/sources/{{ s.id }}/delete"
+                  onsubmit="return confirm('{{ t('delete') }}؟')">
+              <button class="button danger sm">{{ t('delete') }}</button>
+            </form>
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="6" class="empty">—</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% endblock %}
+{% block scripts %}
+<script>
+function toggleDestForm(id) {
+  const f = document.getElementById('destForm' + id);
+  f.style.display = f.style.display === 'none' ? 'flex' : 'none';
+}
+function filterChannels() {
+  const q = document.getElementById('chSearch').value.toLowerCase();
+  const c = document.getElementById('chCountry').value;
+  document.querySelectorAll('#channelsTable tbody tr, tbody tr[data-country]').forEach(tr => {
+    const okQ = !q || (tr.dataset.search || '').includes(q);
+    const okC = !c || tr.dataset.country === c;
+    tr.style.display = (okQ && okC) ? '' : 'none';
+  });
+}
+</script>
+{% endblock %}

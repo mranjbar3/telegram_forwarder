@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}جزئیات پیام #{{ item.id }}{% endblock %}
+{% block heading %}جزئیات پیام #{{ item.id }}{% endblock %}
+{% block content %}
+<div class="card section">
+  <div class="section-header">
+    <h2>اطلاعات پیام</h2>
+    <a class="button secondary sm" href="/messages">بازگشت</a>
+  </div>
+  <table class="table">
+    <tbody>
+      <tr><th>وضعیت</th><td><span class="badge badge-{{ item.status }}">{{ item.status }}</span></td></tr>
+      <tr><th>مبدأ</th><td>{{ item.source_chat_title }} ({{ item.source_chat_id }}/{{ item.source_message_id }})</td></tr>
+      <tr><th>مقصد</th><td>{{ item.dest_chat_title }} ({{ item.dest_chat_id }})</td></tr>
+      <tr><th>پیام ارسال‌شده در مقصد</th><td>{{ item.sent_message_id or '—' }}</td></tr>
+      <tr><th>زمان ثبت</th><td>{{ item.created_at.strftime('%Y-%m-%d %H:%M:%S') if item.created_at else '—' }}</td></tr>
+      <tr><th>زمان ارسال</th><td>{{ item.sent_at.strftime('%Y-%m-%d %H:%M:%S') if item.sent_at else '—' }}</td></tr>
+      <tr><th>تلاش</th><td>{{ item.retry_count }}</td></tr>
+      <tr><th>خطا</th><td class="red">{{ item.error_message or '—' }}</td></tr>
+      <tr><th>LLM</th><td>{{ item.llm_reason or '—' }}</td></tr>
+      <tr><th>دستی</th><td>{{ 'بله' if item.manual_source else 'خیر' }}</td></tr>
+      <tr><th>مدیا</th><td>{{ item.media_type or '—' }}</td></tr>
+    </tbody>
+  </table>
+  <h3 style="margin-top:20px">متن کامل</h3>
+  <pre style="background:var(--panel2);padding:16px;border-radius:8px;white-space:pre-wrap">{{ item.cleaned_text or item.content_preview or '—' }}</pre>
+</div>
+{% endblock %}

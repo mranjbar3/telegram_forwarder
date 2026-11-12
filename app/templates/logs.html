@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+{% block title %}{{ t('logs') }}{% endblock %}
+{% block heading %}{{ t('logs') }}{% endblock %}
+{% block subheading %}نمودار فعالیت کاربران — با کلیک روی هر کاربر، لاگ‌های همان کاربر فیلتر می‌شود{% endblock %}
+{% block content %}
+
+<!-- ═══ نمودار فعالیت کاربران ═══ -->
+<div class="card section">
+  <div class="section-header">
+    <h2>📊 فعالیت کاربران</h2>
+    <div class="flex">
+      {% if filter_user %}
+        <span class="pill info">فیلتر: {{ filter_user }}</span>
+        <a class="button secondary sm" href="/logs">نمایش همه</a>
+      {% endif %}
+      <span class="pill">{{ total_logs }} رکورد</span>
+    </div>
+  </div>
+
+  {% if by_user %}
+    {% set maxv = by_user[0][1] %}
+    <div class="bars">
+      {% for name, count in by_user %}
+        <div class="bar-line" style="cursor:pointer;{% if name==filter_user %}background:color-mix(in srgb, var(--blue) 15%, transparent);border-radius:6px{% endif %}"
+             onclick="location='/logs?user={{ name|urlencode }}'"
+             title="کلیک برای دیدن لاگ‌های {{ name }}">
+          <span style="font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
+            👤 {{ name }}
+          </span>
+          <div class="track activity-bar-track">
+            <div class="fill activity-bar-fill" style="width:{{ (count / maxv * 100)|round(1) }}%"></div>
+          </div>
+          <b>{{ count }}</b>
+        </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="empty">هنوز لاگی ثبت نشده.</div>
+  {% endif %}
+
+  {% if user_actions %}
+    <h3 style="margin-top:18px;font-size:13px;color:var(--bright)">تفکیک اقدامات {{ filter_user }}</h3>
+    <div class="bars" style="margin-top:8px">
+      {% set maxa = user_actions[0][1] %}
+      {% for action, cnt in user_actions %}
+        <div class="bar-line">
+          <span style="font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ action }}</span>
+          <div class="track activity-bar-track">
+            <div class="fill" style="width:{{ (cnt / maxa * 100)|round(1) }}%;background:linear-gradient(90deg,#22a06b,#36d4a3)"></div>
+          </div>
+          <b>{{ cnt }}</b>
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+</div>
+
+<!-- ═══ جدول لاگ‌ها ═══ -->
+<div class="card section" style="margin-top:14px">
+  <div class="section-header">
+    <h2>
+      {% if filter_user %}لاگ‌های {{ filter_user }}{% else %}آخرین لاگ‌ها{% endif %}
+    </h2>
+    <span class="pill info">{{ logs|length }}</span>
+  </div>
+  <div class="table-wrap">
+    <table class="table">
+      <thead><tr><th>کاربر</th><th>اقدام</th><th>جزئیات</th><th>زمان</th></tr></thead>
+      <tbody>
+        {% for l in logs %}
+        <tr>
+          <td><a href="/logs?user={{ l.user|urlencode }}">👤 {{ l.user }}</a></td>
+          <td>{{ l.action }}</td>
+          <td class="muted">{{ l.detail[:80] }}</td>
+          <td><small class="muted">{{ l.created_at.strftime('%Y-%m-%d %H:%M') }}</small></td>
+        </tr>
+        {% else %}
+        <tr><td colspan="4" class="empty">موردی نیست.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% endblock %}

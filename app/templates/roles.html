@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% set active='roles' %}
+{% block title %}سطوح دسترسی{% endblock %}
+{% block content %}
+<div class="card">
+  <h2>دسترسی‌های نقش</h2>
+  <form method="get">
+    <label class="field"><span>نقش</span>
+      <select name="role" onchange="this.form.submit()">
+        {% for r in role_names %}<option {% if r==role %}selected{% endif %}>{{ r }}</option>{% endfor %}
+      </select>
+    </label>
+  </form>
+  <form method="post" action="/users/roles/save">
+    <input type="hidden" name="role" value="{{ role }}">
+    <div class="grid" style="grid-template-columns:repeat(3,1fr)">
+      {% set pages = ['dashboard','publish','channels','categories','templates','bookmarks','queue','rules','prompts','reports','users','roles','logs','health','settings'] %}
+      {% for p in pages %}
+      <label class="check"><input type="checkbox" name="pages" value="{{ p }}" {% if p in perms %}checked{% endif %}> {{ p }}</label>
+      {% endfor %}
+    </div>
+    <button class="btn" style="margin-top:16px">ذخیره دسترسی‌ها</button>
+  </form>
+</div>
+{% endblock %}

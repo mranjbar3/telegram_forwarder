@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% set active='categories' %}
+{% block title %}دسته‌بندی‌ها{% endblock %}
+{% block content %}
+<div class="grid">
+  {% for cat, count in cats %}
+  <div class="card">
+    <div class="label">{{ cat or 'بدون دسته' }}</div>
+    <div class="metric">{{ count }}</div>
+    <span class="green mini">● کانال</span>
+  </div>
+  {% else %}
+  <div class="card empty">هنوز دسته‌ای تعریف نشده.</div>
+  {% endfor %}
+</div>
+<div class="card">
+  <p class="muted">دسته‌ها هنگام افزودن/ویرایش کانال در صفحه‌ی «مدیریت کانال‌ها» تعیین می‌شوند.</p>
+  <a class="btn" href="/sources">رفتن به مدیریت کانال‌ها</a>
+</div>
+{% endblock %}

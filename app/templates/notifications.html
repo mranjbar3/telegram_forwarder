@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% block title %}اعلان‌ها{% endblock %}
+{% block heading %}اعلان‌ها{% endblock %}
+{% block subheading %}ارسال پیام و اطلاع‌رسانی به کاربران سامانه{% endblock %}
+{% block content %}
+
+<div class="card section">
+  <h2>📢 ارسال اعلان جدید</h2>
+  <form method="post" action="/notifications/create">
+    <label class="field">
+      <span>عنوان *</span>
+      <input name="title" required maxlength="200" placeholder="مثلاً: به‌روزرسانی سامانه">
+    </label>
+    <label class="field">
+      <span>متن پیام *</span>
+      <textarea name="body" required placeholder="جزئیات اعلان..."></textarea>
+    </label>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      <label class="field">
+        <span>سطح</span>
+        <select name="level">
+          <option value="info">اطلاع‌رسانی (آبی)</option>
+          <option value="success">موفقیت (سبز)</option>
+          <option value="warning">هشدار (نارنجی)</option>
+          <option value="error">خطا (قرمز)</option>
+        </select>
+      </label>
+      <label class="field">
+        <span>مخاطب</span>
+        <select name="target_role">
+          <option value="">همه کاربران</option>
+          <option value="admin">فقط مدیران</option>
+          <option value="operator">اپراتورها</option>
+          <option value="editor">کارشناسان محتوا</option>
+          <option value="viewer">ناظران</option>
+        </select>
+      </label>
+    </div>
+    <button class="button" type="submit">📤 ارسال اعلان</button>
+  </form>
+</div>
+
+<div class="card section" style="margin-top:14px">
+  <div class="section-header">
+    <h2>📋 اعلان‌های ارسال‌شده ({{ items|length }})</h2>
+  </div>
+  {% if items %}
+    <div class="table-wrap">
+      <table class="table">
+        <thead><tr><th>عنوان</th><th>سطح</th><th>مخاطب</th><th>ارسال‌کننده</th><th>زمان</th><th></th></tr></thead>
+        <tbody>
+        {% for n in items %}
+        <tr>
+          <td><strong>{{ n.title }}</strong><br><small class="muted">{{ n.body[:60] }}</small></td>
+          <td><span class="pill {{ 'info' if n.level=='info' else 'green' if n.level=='success' else 'orange' if n.level=='warning' else 'red' }}">{{ n.level }}</span></td>
+          <td>{{ n.target_role or 'همه' }}</td>
+          <td>{{ n.created_by }}</td>
+          <td><small class="muted">{{ n.created_at.strftime('%m/%d %H:%M') }}</small></td>
+          <td>
+            <form method="post" action="/notifications/{{ n.id }}/delete" style="display:inline"
+                  onsubmit="return confirm('حذف اعلان؟')">
+              <button class="button danger sm" type="submit">حذف</button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <div class="empty">هنوز اعلانی ارسال نشده است.</div>
+  {% endif %}
+</div>
+
+{% endblock %}

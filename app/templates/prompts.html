@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% set active='prompts' %}
+{% block title %}پرامپت‌های LLM{% endblock %}
+{% block content %}
+<div class="card">
+  <h2>➕ پرامپت جدید</h2>
+  <form method="post" action="/prompts/create">
+    <div class="two">
+      <label class="field"><span>نام</span><input name="name" required></label>
+      <label class="field"><span>نوع</span>
+        <select name="prompt_type"><option value="classify">تشخیص اسپم</option><option value="clean">پاکسازی متن</option></select>
+      </label>
+      <label class="field"><span>Chat ID اختصاصی (خالی = عمومی)</span><input name="applies_to_chat_id" type="number"></label>
+    </div>
+    <label class="field"><span>متن پرامپت</span><textarea name="prompt" required placeholder="تو یک فیلتر محتوای تلگرام هستی..."></textarea></label>
+    <button class="btn">ذخیره</button>
+  </form>
+</div>
+
+<div class="card">
+  <h2>پرامپت‌های فعال</h2>
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>نام</th><th>نوع</th><th>Chat ID</th><th>متن</th><th></th></tr></thead>
+      <tbody>
+      {% for p in prompts %}
+      <tr>
+        <td>{{ p.name }}</td>
+        <td><span class="chip">{{ p.prompt_type }}</span></td>
+        <td>{{ p.applies_to_chat_id or '—' }}</td>
+        <td class="muted">{{ p.prompt[:80] }}</td>
+        <td><form method="post" action="/prompts/{{ p.id }}/delete"><button class="btn warn sm">حذف</button></form></td>
+      </tr>
+      {% else %}
+      <tr><td colspan="5" class="empty">پرامپتی نیست.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

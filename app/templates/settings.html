@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% set active='settings' %}
+{% block title %}تنظیمات{% endblock %}
+{% block content %}
+<form method="post" action="/settings/save" class="card section">
+  <h2>{{ t('settings') }}</h2>
+  <label class="field"><span>عنوان (فارسی)</span>
+    <input name="app_title_fa" value="{{ values.get('app_title_fa', '') }}">
+  </label>
+  <label class="field"><span>Title (English)</span>
+    <input name="app_title_en" value="{{ values.get('app_title_en', '') }}">
+  </label>
+  <label class="field"><span>العنوان (العربية)</span>
+    <input name="app_title_ar" value="{{ values.get('app_title_ar', '') }}" dir="rtl">
+  </label>
+  {% for key, label, default in keys if not key.startswith('app_title') %}
+    <label class="field"><span>{{ label }}</span>
+      <input name="{{ key }}" value="{{ values.get(key, default) }}">
+    </label>
+  {% endfor %}
+  <button class="button">{{ t('save') }}</button>
+</form>
+{% endblock %}

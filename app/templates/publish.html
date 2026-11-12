@@ -1,0 +1,253 @@
+{% extends "base.html" %}
+{% block title %}ثبت پیام و انتشار{% endblock %}
+{% block heading %}ثبت پیام و انتشار{% endblock %}
+{% block subheading %}انتشار دستی یا زمان‌بندی‌شده در کانال‌های مقصد{% endblock %}
+{% block content %}
+
+<form method="post" action="/publish/send" class="publish-grid">
+
+  <!-- ستون محتوا -->
+  <div class="publish-main">
+    <h3 class="publish-col-title">محتوا و تعامل پیام</h3>
+
+    <label class="field">
+      <span>نام پروژه</span>
+      <input name="project_name" placeholder="عنوان پروژه (اختیاری)">
+    </label>
+
+    <label class="field">
+      <span>متن پیام *</span>
+      <textarea name="text" required rows="8" placeholder="متن پیام تلگرام..."></textarea>
+    </label>
+
+<label class="check">
+  <input type="checkbox" name="apply_filters" value="1">
+  اعمال فیلترها و LLM روی این پیام (ممکن است مسدود شود یا تغییر کند)
+</label>
+
+    <label class="field">
+      <span>افزودن فیلم یا عکس</span>
+      <input id="publishMedia" type="file" accept="image/*,video/*" multiple>
+      <small id="mediaInfo" class="muted">فایلی انتخاب نشده است</small>
+    </label>
+
+    <div class="field">
+      <span>تنظیمات تعامل</span>
+      <div class="target-grid">
+        <label>تعداد لایک<input name="likes_target" type="number" min="0" value="0"></label>
+        <label>کامنت<input name="comments_target" type="number" min="0" value="0"></label>
+        <label>ری‌اکشن<input name="reactions_target" type="number" min="0" value="0"></label>
+      </div>
+    </div>
+
+    <div class="publish-action">
+      <button class="button publish-submit" type="submit">✓ ثبت انتشار</button>
+      <p class="muted" style="font-size:11px;text-align:center;margin:0">
+        پیام به صف ارسال سپرده می‌شود و Worker آن را با رعایت Rate Limit ارسال می‌کند.
+      </p>
+    </div>
+  </div>
+
+  <!-- ستون تنظیمات -->
+  <div class="publish-side">
+    <h3 class="publish-col-title">تنظیمات و مقصد انتشار</h3>
+
+    <label class="field">
+      <span>نوع پروژه</span>
+      <select name="is_ad">
+        <option value="0">موضوعی</option>
+        <option value="1">تبلیغاتی</option>
+      </select>
+    </label>
+
+    <div class="field">
+      <span>زمان‌بندی</span>
+      <div class="type-picker">
+        <label><input type="radio" name="schedule_mode" value="now" checked> فوری</label>
+        <label><input type="radio" name="schedule_mode" value="later"> زمان‌بندی</label>
+      </div>
+    </div>
+
+    <div id="scheduleFields" class="schedule-pair hidden">
+      <label class="field">
+        <span>تاریخ شمسی</span>
+        <div class="calendar-input">
+          <input name="jalali_date" id="jalaliDate" readonly placeholder="۱۴۰۵/۰۸/۱۵">
+          <button type="button" id="calendarOpen" class="calendar-trigger" aria-label="باز کردن تقویم">▦</button>
+        </div>
+        <div id="jalaliCalendar" class="jalali-calendar hidden"></div>
+      </label>
+      <label class="field">
+        <span>ساعت</span>
+        <input name="schedule_time" type="time" value="12:00">
+      </label>
+    </div>
+
+    <div class="field">
+      <span>جست‌وجوی کانال مقصد</span>
+      <input id="destinationSearch" placeholder="نام یا آیدی کانال..." type="search">
+<label class="field">
+  <span>{{ t('country') }}</span>
+  <select onchange="location='/publish?country='+this.value">
+    <option value="">{{ t('all') }}</option>
+    {% for code, fa, en, ar, flag in COUNTRIES %}
+      <option value="{{ code }}" {% if selected_country==code %}selected{% endif %}>{{ flag }} {{ lang_name(code, request.state.lang) }}</option>
+    {% endfor %}
+  </select>
+</label>
+    </div>
+
+    <div class="field">
+      <span>انتخاب کانال‌های مقصد</span>
+      <div class="destination-table-wrap">
+        <table class="destination-table">
+          <thead>
+            <tr><th style="width:28px">✓</th><th>نام</th><th>شناسه</th><th>دسته</th></tr>
+          </thead>
+          <tbody id="destinationList">
+            {% for s in sources %}
+              {% for d in s.destinations %}
+              <tr>
+                <td><input type="checkbox" name="dest_ids" value="{{ d.chat_id }}" data-search="{{ d.title|lower }} {{ d.chat_id|lower }}"></td>
+                <td title="{{ d.title }}">{{ d.title[:18] }}</td>
+                <td><small class="muted">{{ d.chat_id }}</small></td>
+                <td><small>{{ s.category or 'عمومی' }}</small></td>
+              </tr>
+              {% endfor %}
+            {% else %}
+              <tr><td colspan="4" class="empty">هنوز مقصدی تعریف نشده است.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      <small id="destinationCount" class="muted">۰ کانال انتخاب‌شده</small>
+    </div>
+  </div>
+</form>
+
+{% endblock %}
+{% block scripts %}
+<script>
+  // زمان‌بندی
+  document.querySelectorAll('input[name="schedule_mode"]').forEach(el => {
+    el.onchange = () => {
+      document.getElementById('scheduleFields').classList.toggle('hidden',
+        document.querySelector('input[name="schedule_mode"]:checked').value !== 'later');
+    };
+  });
+
+  // نمایش فایل‌ها
+  document.getElementById('publishMedia').onchange = e => {
+    const names = Array.from(e.target.files).map(f => f.name).join('، ');
+    document.getElementById('mediaInfo').textContent = names || 'فایلی انتخاب نشده است';
+  };
+
+  // جست‌وجو + شمارش
+  const updateDestCount = () => {
+    const sel = document.querySelectorAll('input[name="dest_ids"]:checked').length;
+    document.getElementById('destinationCount').textContent = sel + ' کانال انتخاب‌شده';
+  };
+  document.querySelectorAll('input[name="dest_ids"]').forEach(cb => {
+    cb.onchange = updateDestCount;
+  });
+  updateDestCount();
+
+  document.getElementById('destinationSearch').oninput = e => {
+    const q = e.target.value.trim().toLowerCase();
+    document.querySelectorAll('#destinationList tr').forEach(tr => {
+      const cb = tr.querySelector('input[name="dest_ids"]');
+      if (!cb) return;
+      tr.style.display = !q || cb.dataset.search.includes(q) ? '' : 'none';
+    });
+  };
+
+  // ── تقویم شمسی ──
+  const months = ['فروردین','اردیبهشت','خرداد','تیر','مرداد','شهریور','مهر','آبان','آذر','دی','بهمن','اسفند'];
+  const persianParts = d => {
+    const a = new Intl.DateTimeFormat('en-US-u-ca-persian',{year:'numeric',month:'numeric',day:'numeric'}).formatToParts(d);
+    const n = t => +a.find(x => x.type === t).value;
+    return [n('year'), n('month'), n('day')];
+  };
+  const toPersianDigits = s => String(s).replace(/\d/g, d => '۰۱۲۳۴۵۶۷۸۹'[d]);
+  const pad = n => String(n).padStart(2, '0');
+
+  // تبدیل jalali → gregorian (تقریبی با Intl)
+  function jalaliToIso(jy, jm, jd) {
+    // از Intl برای برگرداندن استفاده می‌کنیم
+    let gy = jy + 621;
+    if (jm <= 10) gy++;
+    // روش دقیق‌تر: جست‌وجوی تاریخ میلادی که با آن مطابقت دارد
+    let candidate = new Date(gy, 2, 1);
+    for (let i = 0; i < 400; i++) {
+      const p = persianParts(candidate);
+      const cmp = p[0] * 10000 + p[1] * 100 + p[2];
+      const target = jy * 10000 + jm * 100 + jd;
+      if (cmp === target) return candidate;
+      if (cmp < target) candidate.setDate(candidate.getDate() + 10);
+      else candidate.setDate(candidate.getDate() - 3);
+      // اصلاح دقیق
+      candidate = new Date(candidate);
+      for (let k = 0; k < 40; k++) {
+        const pp = persianParts(candidate);
+        const c = pp[0] * 10000 + pp[1] * 100 + pp[2];
+        if (c === target) return candidate;
+        if (c < target) candidate.setDate(candidate.getDate() + 1);
+        else candidate.setDate(candidate.getDate() - 1);
+      }
+    }
+    return null;
+  }
+
+  let [cy, cm] = persianParts(new Date());
+  const cal = document.getElementById('jalaliCalendar');
+
+  function renderCal() {
+    const [ny, nm, nd] = persianParts(new Date());
+    const firstIso = jalaliToIso(cy, cm, 1);
+    const offset = firstIso ? (firstIso.getDay() + 1) % 7 : 0;
+    const len = cm <= 6 ? 31 : cm < 12 ? 30 : (jalaliToIso(cy, 12, 30) ? 30 : 29);
+    const names = ['ش','ی','د','س','چ','پ','ج'];
+    let html = `<div class="cal-header">
+      <button type="button" data-cal="prev">‹</button>
+      <b>${months[cm-1]} ${toPersianDigits(cy)}</b>
+      <button type="button" data-cal="next">›</button>
+    </div>
+    <div class="cal-grid">${names.map(n => `<span class="dow">${n}</span>`).join('')}
+    ${'<span></span>'.repeat(offset)}`;
+    for (let d = 1; d <= len; d++) {
+      const past = cy < ny || (cy === ny && (cm < nm || (cm === nm && d < nd)));
+      const selected = cy === ny && cm === nm && d === nd;
+      html += `<button type="button" data-day="${d}" ${past?'disabled':''} class="${selected?'selected':''}">${toPersianDigits(d)}</button>`;
+    }
+    cal.innerHTML = html + '</div>';
+cal.querySelectorAll('[data-cal]').forEach(b => {
+  b.onclick = (e) => {
+    e.stopPropagation();           // ← اضافه
+    e.preventDefault();
+    cm += b.dataset.cal === 'next' ? 1 : -1;
+    if (cm === 13) { cm = 1; cy++; }
+    if (cm === 0)  { cm = 12; cy--; }
+    renderCal();
+    cal.classList.remove('hidden'); // ← اطمینان
+  };
+});
+cal.querySelectorAll('[data-day]').forEach(b => {
+  b.onclick = (e) => {
+    e.stopPropagation();
+    document.getElementById('jalaliDate').value = ...;
+    cal.classList.add('hidden');
+  };
+});
+  }
+
+  document.getElementById('calendarOpen').onclick = () => {
+    cal.classList.toggle('hidden');
+    if (!cal.classList.contains('hidden')) renderCal();
+  };
+  document.getElementById('jalaliDate').onclick = () => document.getElementById('calendarOpen').click();
+  document.addEventListener('click', e => {
+    if (!e.target.closest('.calendar-input') && !e.target.closest('#jalaliCalendar'))
+      cal.classList.add('hidden');
+  });
+</script>
+{% endblock %}

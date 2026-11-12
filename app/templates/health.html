@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% set active='health' %}
+{% block title %}سلامت سیستم{% endblock %}
+{% block content %}
+<div class="grid">
+  {% for name, (status, msg) in checks.items() %}
+  <div class="card">
+    <h2>{{ name }}</h2>
+    <span class="pill {{ status }}">{{ msg }}</span>
+  </div>
+  {% endfor %}
+</div>
+<div class="card">
+  <p class="muted">وضعیت‌ها از تست زنده‌ی سرویس‌ها گرفته می‌شوند.</p>
+</div>
+{% endblock %}

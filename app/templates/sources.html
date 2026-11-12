@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% block title %}منابع و اتصال‌ها{% endblock %}
+{% block content %}
+<h1>منابع و اتصال‌ها</h1>
+
+<!-- ─── افزودن منبع (کد + chat_id + username) ─── -->
+<div class="card">
+  <h2>➕ افزودن کانال مبدأ</h2>
+  <form method="post" action="/sources/create" class="form-inline">
+    <label>کد کانال (یکتا)
+      <input name="code" required placeholder="مثلاً SRC-01">
+    </label>
+    <label>Chat ID (عدد)
+      <input name="chat_id" type="number" required placeholder="-1001234567890">
+    </label>
+    <label>یوزرنیم (اختیاری)
+      <input name="chat_username" placeholder="my_public_channel">
+    </label>
+    <label>عنوان نمایشی
+      <input name="title" required>
+    </label>
+    <button>افزودن</button>
+  </form>
+</div>
+
+<!-- ─── نگاشت مبدأ ← مقصد ─── -->
+<h2>🔗 اتصال منابع به مقصدها</h2>
+<div class="mapping-grid">
+{% for s in sources %}
+  <div class="mapping-card">
+    <div class="mapping-header">
+      <div>
+        <span class="code">{{ s.code }}</span>
+        <strong>{{ s.title }}</strong>
+        <small style="color:var(--text-muted)">
+          {{ s.chat_id }}
+          {% if s.chat_username %}· @{{ s.chat_username }}{% endif %}
+        </small>
+      </div>
+      <form method="post" action="/sources/{{ s.id }}/delete"
+            onsubmit="return confirm('منبع و همه اتصال‌هایش حذف شود؟')">
+        <button class="btn-sm danger">حذف منبع</button>
+      </form>
+    </div>
+
+    <div class="dest-list">
+      {% for d in s.destinations %}
+        <span class="dest-chip">
+          ➡️ {{ d.title }}
+          <small>({{ d.chat_id }})</small>
+          <form method="post" action="/sources/{{ s.id }}/destinations/{{ d.id }}/delete" style="display:inline">
+            <button class="btn-sm">✕</button>
+          </form>
+        </span>
+      {% else %}
+        <span class="empty" style="padding:0">هنوز مقصدی متصل نشده — پیام‌ها ذخیره می‌شوند اما ارسال نمی‌شوند.</span>
+      {% endfor %}
+    </div>
+
+    <!-- افزودن مقصد به این منبع -->
+    <form method="post" action="/sources/{{ s.id }}/destinations/create" class="form-inline">
+      <label>Chat ID مقصد<input name="chat_id" type="number" required></label>
+      <label>یوزرنیم مقصد (اختیاری)<input name="chat_username"></label>
+      <label>عنوان<input name="title" required></label>
+      <button>افزودن مقصد</button>
+    </form>
+  </div>
+{% else %}
+  <div class="card empty">هنوز هیچ کانال مبدأیی اضافه نشده است.</div>
+{% endfor %}
+</div>
+{% endblock %}

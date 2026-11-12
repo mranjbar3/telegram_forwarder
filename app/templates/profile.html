@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}پروفایل کاربر{% endblock %}
+{% block heading %}پروفایل کاربر{% endblock %}
+{% block subheading %}مدیریت حساب و سوابق شخصی{% endblock %}
+{% block content %}
+
+<div class="card section">
+  <div class="section-header">
+    <h2>{{ me.full_name or me.username }}</h2>
+    <span class="pill info">{{ me.role }}</span>
+  </div>
+  <p class="muted" style="margin:0 0 12px">
+    نام کاربری: <b>@{{ me.username }}</b> · آخرین ورود:
+    {{ me.last_login.strftime('%Y-%m-%d %H:%M') if me.last_login else '—' }}
+  </p>
+
+  <div class="profile-tabs">
+    <a class="button secondary sm" href="/profile#password">تغییر رمز عبور</a>
+    <a class="button secondary sm" href="/logs">لاگ سامانه</a>
+  </div>
+
+  <div id="password" style="margin-top:20px;max-width:400px">
+    <h3 style="font-size:14px">تغییر رمز عبور</h3>
+    <form method="post" action="/profile/password">
+      <label class="field"><span>رمز فعلی</span><input type="password" name="old_password" required></label>
+      <label class="field"><span>رمز جدید</span><input type="password" name="new_password" required minlength="6"></label>
+      <label class="field"><span>تکرار رمز جدید</span><input type="password" name="confirm_password" required minlength="6"></label>
+      <button class="button" type="submit">ذخیره تغییرات</button>
+    </form>
+    {% if request.query_params.get('ok') %}
+      <p class="green" style="margin-top:10px">✅ رمز عبور با موفقیت تغییر یافت.</p>
+    {% elif request.query_params.get('err') %}
+      <p class="red" style="margin-top:10px">❌ رمز فعلی اشتباه است یا رمزهای جدید یکسان نیستند.</p>
+    {% endif %}
+  </div>
+</div>
+
+{% endblock %}

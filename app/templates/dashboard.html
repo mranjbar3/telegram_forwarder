@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}{{ t('dashboard') }}{% endblock %}
+{% block heading %}{{ t('dashboard') }}{% endblock %}
+{% block content %}
+
+<div class="kpis">
+  <div class="card kpi green"><span class="label">{{ t('active_links') }}</span><strong>{{ active_channels }}</strong><span class="accent"></span></div>
+  <div class="card kpi red"><span class="label">{{ t('inactive_links') }}</span><strong>{{ total_channels - active_channels }}</strong><span class="accent"></span></div>
+  <div class="card kpi"><span class="label">{{ t('total_sent') }}</span><strong>{{ sent }}</strong><span class="accent"></span></div>
+  <div class="card kpi gold"><span class="label">{{ t('sent_today') }}</span><strong>{{ sent_today }}</strong><span class="accent"></span></div>
+  <div class="card kpi"><span class="label">{{ t('total_channels') }}</span><strong>{{ total_channels }}</strong><span class="accent"></span></div>
+</div>
+
+<div class="charts">
+  <div class="card section">
+    <div class="section-header">
+      <h2>{{ t('channels_by_country') }}</h2>
+      <a href="/dashboard" class="button secondary sm">{{ t('all') }}</a>
+    </div>
+    {% set maxv = by_country.values()|max if by_country else 1 %}
+    <div class="countries">
+      {% for code, fa, en, ar, flag in COUNTRIES %}
+        {% set n = by_country.get(code, 0) %}
+        {% if n > 0 %}
+        <div class="country-row {% if selected_country==code %}selected{% endif %}"
+             onclick="location='/dashboard?country={{ code }}'">
+          <span class="country-label"><span class="flag">{{ flag }}</span>{{ lang_name(code, request.state.lang) }}</span>
+          <div class="track"><div class="fill" style="width:{{ (n / maxv * 100)|round(1) }}%"></div></div>
+          <b>{{ n }}</b>
+        </div>
+        {% endif %}
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="card section">
+    <div class="section-header">
+      <h2>{{ t('top_channels') }}</h2>
+      {% if selected_country %}<span class="pill info">{{ lang_flag(selected_country) }} {{ lang_name(selected_country, request.state.lang) }}</span>{% endif %}
+    </div>
+    <div class="bars">
+      {% set maxc = top_channels|map(attribute='count')|max if top_channels else 1 %}
+      {% for c in top_channels %}
+        <div class="bar-line">
+          <span style="font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ c.title[:22] }}</span>
+          <div class="track activity-bar-track"><div class="fill activity-bar-fill" style="width:{{ (c.count / maxc * 100)|round(1) }}%"></div></div>
+          <b>{{ c.count }}</b>
+        </div>
+      {% else %}
+        <div class="empty">{{ t('all') }}</div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+{% endblock %}

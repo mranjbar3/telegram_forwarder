@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% block title %}{{ t('records') }}{% endblock %}
+{% block heading %}{{ t('records') }}{% endblock %}
+{% block subheading %}پیام‌های ثبت‌شده، ارسال‌شده و خطادار{% endblock %}
+{% block content %}
+
+<div class="card section">
+  <div class="section-header">
+    <h2>{{ 'بوکمارک‌ها' if bookmarked else t('records') }}</h2>
+    <div class="flex">
+      <!-- ─── فیلتر وضعیت ─── -->
+      <form method="get" style="display:flex;gap:6px;align-items:center">
+        <select name="status" onchange="this.form.submit()" style="width:auto">
+          <option value="">{{ t('all') }}</option>
+          {% for s in statuses %}
+            <option value="{{ s }}" {% if s == status %}selected{% endif %}>{{ s }}</option>
+          {% endfor %}
+        </select>
+      </form>
+      <!-- ─── دکمه‌ی دانلود CSV ─── -->
+      <a class="button" href="/messages/export.csv{% if status %}?status={{ status }}{% endif %}">
+        ⬇ {{ t('export_csv') }}
+      </a>
+    </div>
+  </div>
+
+  <div class="table-wrap">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>#</th><th>مبدأ</th><th>مقصد</th><th>پیش‌نمایش</th>
+          <th>وضعیت</th><th>تلاش</th><th>خطا</th><th>زمان</th><th>عملیات</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for m in items %}
+        <tr>
+          <td><a href="/messages/{{ m.id }}">{{ m.id }}</a></td>
+          <td>
+            <strong>{{ m.source_chat_title }}</strong><br>
+            <small class="muted">{{ m.source_chat_id }}/{{ m.source_message_id }}</small>
+          </td>
+          <td>{{ m.dest_chat_title }}</td>
+          <td class="muted" style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ m.content_preview[:60] }}</td>
+          <td><span class="badge badge-{{ m.status }}">{{ m.status }}</span></td>
+          <td>{{ m.retry_count }}</td>
+          <td class="red" style="max-width:150px;font-size:11px;overflow:hidden;text-overflow:ellipsis">{{ m.error_message[:40] }}</td>
+          <td><small class="muted">{{ m.created_at.strftime('%m/%d %H:%M') if m.created_at else '—' }}</small></td>
+          <td style="white-space:nowrap">
+            <form method="post" action="/messages/{{ m.id }}/retry" style="display:inline">
+              <button class="button secondary sm" title="تلاش مجدد">🔄</button>
+            </form>
+            <form method="post" action="/messages/{{ m.id }}/bookmark" style="display:inline">
+              <button class="button secondary sm" title="بوکمارک">{{ '★' if m.is_bookmarked else '☆' }}</button>
+            </form>
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="9" class="empty">موردی ثبت نشده است.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ─── صفحه‌بندی ─── -->
+  <div class="pager" style="display:flex;justify-content:center;gap:12px;margin-top:14px">
+    {% if page > 1 %}
+      <a class="button secondary sm" href="?page={{ page - 1 }}{% if status %}&status={{ status }}{% endif %}">قبلی</a>
+    {% endif %}
+    <span class="pill">صفحه {{ page }}</span>
+    <a class="button secondary sm" href="?page={{ page + 1 }}{% if status %}&status={{ status }}{% endif %}">بعدی</a>
+  </div>
+</div>
+
+{% endblock %}

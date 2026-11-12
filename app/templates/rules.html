@@ -1,0 +1,175 @@
+{% extends "base.html" %}
+{% block title %}فیلتر محتوا{% endblock %}
+{% block heading %}فیلتر محتوا{% endblock %}
+{% block subheading %}کلمات ممنوعه، Regex، هدر و فوتر — اعمال روی پیام‌های کانال‌به‌کانال و انتشار دستی{% endblock %}
+{% block content %}
+
+<div class="two">
+  <!-- فرم افزودن قانون -->
+  <div class="card section">
+    <h2>➕ افزودن قانون</h2>
+    <form method="post" action="/rules/create">
+      <label class="field">
+        <span>نام قانون *</span>
+        <input name="name" required placeholder="مثال: مسدودسازی تبلیغات">
+      </label>
+
+      <label class="field">
+        <span>نوع قانون *</span>
+        <select name="rule_type" id="ruleType" onchange="updateHints()">
+          <option value="keyword">کلمه ممنوعه (keyword)</option>
+          <option value="regex">الگوی Regex</option>
+          <option value="header">هدر (بالای پیام)</option>
+          <option value="footer">فوتر (پایین پیام)</option>
+        </select>
+      </label>
+
+      <div id="hintBox" class="muted" style="background:var(--panel2);padding:10px;border-radius:8px;font-size:12px;line-height:1.9;margin-bottom:10px">
+        <!-- توسط JS پر می‌شود -->
+      </div>
+
+      <label class="field">
+        <span>الگو *</span>
+        <textarea name="pattern" id="rulePattern" required
+                  placeholder="مقدار الگو را وارد کنید..."></textarea>
+        <small class="muted" id="patternHint"></small>
+      </label>
+
+      <button class="button" type="submit">افزودن</button>
+    </form>
+  </div>
+
+  <!-- قوانین فعال -->
+  <div class="card section">
+    <h2>📋 قوانین فعال ({{ rules|length }})</h2>
+    {% if rules %}
+    <div class="table-wrap">
+      <table class="table">
+        <thead><tr><th>نام</th><th>نوع</th><th>الگو</th><th></th></tr></thead>
+        <tbody>
+        {% for r in rules %}
+        <tr>
+          <td><strong>{{ r.name }}</strong></td>
+          <td>
+            <span class="pill info">
+              {% if r.rule_type == 'keyword' %}کلمه
+              {% elif r.rule_type == 'regex' %}Regex
+              {% elif r.rule_type == 'header' %}هدر
+              {% elif r.rule_type == 'footer' %}فوتر
+              {% else %}{{ r.rule_type }}{% endif %}
+            </span>
+          </td>
+          <td class="muted" style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ r.pattern[:80] }}</td>
+          <td>
+            <form method="post" action="/rules/{{ r.id }}/delete" style="display:inline"
+                  onsubmit="return confirm('حذف قانون {{ r.name }}؟')">
+              <button class="button danger sm" type="submit">حذف</button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+      <div class="empty">هنوز قانونی تعریف نشده است.</div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- بخش آموزش با مثال -->
+<div class="card section" style="margin-top:14px">
+  <div class="section-header">
+    <h2>📚 راهنمای سریع + مثال‌ها</h2>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+    <div>
+      <h3 style="font-size:14px;color:var(--bright)">🔴 کلمه ممنوعه (keyword)</h3>
+      <p class="muted" style="font-size:12px;line-height:1.9">
+        اگر کلمه یا عبارت داخل متن پیام باشد، پیام <b>مسدود</b> می‌شود (status=spam).
+        حساس به حروف کوچک/بزرگ نیست.
+      </p>
+      <p class="muted" style="font-size:12px"><b>مثال‌ها:</b></p>
+      <ul class="muted" style="font-size:12px;line-height:1.9">
+        <li><code>تبلیغ</code> — هر پیامی که کلمه «تبلیغ» داشته باشد</li>
+        <li><code>تخفیف ویژه</code> — عبارت کامل</li>
+        <li><code>joinchat</code> — لینک‌های عضویت تلگرام</li>
+      </ul>
+      <p style="font-size:11px;color:var(--gold)">💡 برای هر کلمه یک قانون جدا بسازید.</p>
+    </div>
+
+    <div>
+      <h3 style="font-size:14px;color:var(--bright)">🟡 الگوی Regex</h3>
+      <p class="muted" style="font-size:12px;line-height:1.9">
+        برای الگوهای پیچیده (لینک، شماره، ایمیل). اگر مطابقت پیدا کرد، پیام مسدود می‌شود.
+      </p>
+      <p class="muted" style="font-size:12px"><b>مثال‌ها:</b></p>
+      <ul class="muted" style="font-size:12px;line-height:1.9">
+        <li><code>https?://\S+</code> — هر لینک</li>
+        <li><code>t\.me/\S+</code> — لینک تلگرام</li>
+        <li><code>\b\d{11}\b</code> — شماره موبایل ۱۱ رقمی</li>
+        <li><code>@\w+</code> — هر منشن</li>
+      </ul>
+      <p style="font-size:11px;color:var(--gold)">💡 قبل از ذخیره، الگو را در <a href="https://regex101.com" target="_blank">regex101.com</a> تست کنید.</p>
+    </div>
+
+    <div>
+      <h3 style="font-size:14px;color:var(--bright)">🟢 هدر (header)</h3>
+      <p class="muted" style="font-size:12px;line-height:1.9">
+        متنی که <b>بالای هر پیام</b> ارسالی اضافه می‌شود. اگر چند هدر تعریف کنید، فقط آخرین فعال استفاده می‌شود.
+      </p>
+      <p class="muted" style="font-size:12px"><b>مثال:</b></p>
+      <pre style="background:var(--panel2);padding:10px;border-radius:6px;font-size:11px;white-space:pre-wrap">🔴 اخبار فوری
+─────────────</pre>
+    </div>
+
+    <div>
+      <h3 style="font-size:14px;color:var(--bright)">🔵 فوتر (footer)</h3>
+      <p class="muted" style="font-size:12px;line-height:1.9">
+        متنی که <b>پایین هر پیام</b> ارسالی اضافه می‌شود. فقط آخرین فوتر فعال استفاده می‌شود.
+      </p>
+      <p class="muted" style="font-size:12px"><b>مثال:</b></p>
+      <pre style="background:var(--panel2);padding:10px;border-radius:6px;font-size:11px;white-space:pre-wrap">─────────────
+📡 کانال ما: @dst405_1</pre>
+    </div>
+  </div>
+
+  <div class="empty" style="margin-top:14px;text-align:right;padding:12px">
+    <b style="color:var(--bright)">ترتیب اعمال:</b>
+    <span class="muted">پیام خام ← فیلتر keyword/regex (اگر مطابقت داشت: مسدود) ← LLM classify (اگر اسپم: مسدود) ← LLM clean (تغییر متن) ← هدر (بالا) ← فوتر (پایین) ← ارسال</span>
+  </div>
+</div>
+
+{% endblock %}
+{% block scripts %}
+<script>
+  const HINTS = {
+    keyword: {
+      hint: 'یک کلمه یا عبارت ساده بنویسید. اگر در متن پیام پیدا شود، پیام مسدود می‌شود.',
+      placeholder: 'مثلاً: تبلیغ\nیا: تخفیف ویژه\nیا: joinchat'
+    },
+    regex: {
+      hint: 'یک الگوی Regex معتبر. برای تست، از regex101.com استفاده کنید. اگر match پیدا کند، پیام مسدود می‌شود.',
+      placeholder: 'مثلاً: https?://\\S+\n(هر لینکی را مسدود می‌کند)'
+    },
+    header: {
+      hint: 'متنی که بالای هر پیام اضافه می‌شود. می‌توانید از ایموجی و خط جدید استفاده کنید.',
+      placeholder: '🔴 اخبار فوری\n─────────────'
+    },
+    footer: {
+      hint: 'متنی که پایین هر پیام اضافه می‌شود. فقط یک فوتر فعال توصیه می‌شود.',
+      placeholder: '─────────────\n📡 @your_channel'
+    }
+  };
+  function updateHints() {
+    const t = document.getElementById('ruleType').value;
+    const h = HINTS[t];
+    document.getElementById('hintBox').innerHTML =
+      '💡 <b>راهنما:</b> ' + h.hint;
+    document.getElementById('rulePattern').placeholder = h.placeholder;
+    document.getElementById('patternHint').textContent = h.hint;
+  }
+  document.addEventListener('DOMContentLoaded', updateHints);
+</script>
+{% endblock %}

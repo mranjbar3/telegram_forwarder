@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}گزارش‌ها{% endblock %}
+{% block heading %}گزارشات{% endblock %}
+{% block subheading %}آمار تجمعی وضعیت پیام‌ها و مقصدها{% endblock %}
+{% block content %}
+
+<div class="kpis" style="grid-template-columns:repeat(auto-fill,minmax(180px,1fr))">
+  {% for status, count in by_status.items() %}
+    <div class="card kpi">
+      <span class="label">{{ status }}</span>
+      <strong>{{ count }}</strong>
+      <div class="hint">پیام با این وضعیت</div>
+    </div>
+  {% else %}
+    <div class="card kpi"><span class="label">داده‌ای موجود نیست</span><strong>—</strong></div>
+  {% endfor %}
+</div>
+
+<div class="card section" style="margin-top:14px">
+  <div class="section-header">
+    <h2>پرتکرارترین مقصدها</h2>
+    <button class="button secondary sm" onclick="window.print()">چاپ / PDF</button>
+  </div>
+  <div class="table-wrap">
+    <table class="table">
+      <thead><tr><th>مقصد</th><th>تعداد پیام</th><th>نمودار</th></tr></thead>
+      <tbody>
+        {% if by_dest %}
+          {% set maxv = by_dest[0][1] %}
+          {% for dest, count in by_dest %}
+          <tr>
+            <td>{{ dest or '—' }}</td>
+            <td><b>{{ count }}</b></td>
+            <td style="width:40%">
+              <div class="track"><div class="fill" style="width:{{ (count / maxv * 100) if maxv else 0 }}%"></div></div>
+            </td>
+          </tr>
+          {% endfor %}
+        {% else %}
+          <tr><td colspan="3" class="empty">داده‌ای موجود نیست.</td></tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% endblock %}
